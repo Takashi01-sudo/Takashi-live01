@@ -1,44 +1,48 @@
-// api/checklive.js
-import axios from "axios";
-
-const USER = "abdillahzuhdi63"; // fixed user
-const PROFILE_URL = `https://www.tiktok.com/@${USER}`;
-const LIVE_URL = `https://www.tiktok.com/@${USER}/live`;
-
 export default async function handler(req, res) {
+  const username = "abdillahzuhdi63";
+
   try {
-    const response = await axios.get(PROFILE_URL, {
+    const r = await fetch(`https://www.tiktok.com/@${username}/live`, {
       headers: {
-        // gunakan user-agent "browser-like"
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Linux; Android 14; SM-G996B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-      },
-      maxRedirects: 0,
-      validateStatus: () => true
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Connection": "keep-alive",
+        "Referer": `https://www.tiktok.com/@${username}`
+      }
     });
 
-    const html = response.data || "";
+    const html = await r.text();
 
-    // heuristik cek live (beberapa indikator berbeda)
-    const isLive =
-      html.includes('"isLive":true') ||
-      html.includes('"liveRoomId"') ||
-      /LIVE(_NOW)?/i.test(html) ||
-      html.includes('"is_external_live":true');
+    // Tidak live → TikTok menampilkan teks-teks ini
+    if (
+      html.includes("is not live") ||
+      html.includes("LIVE isn't available") ||
+      html.includes("This LIVE") ||
+      html.includes("currently offline") ||
+      html.includes("offline")
+    ) {
+      return res.status(200).json({
+        live: false,
+        username,
+        live_url: null
+      });
+    }
+
+    // Jika live
+    const liveUrl = `https://www.tiktok.com/@${username}/live`;
 
     return res.status(200).json({
-      username: USER,
-      live: !!isLive,
-      live_url: isLive ? LIVE_URL : null,
-      status: response.status
+      live: true,
+      username,
+      live_url: liveUrl
     });
-  } catch (err) {
-    // jangan crash - selalu return JSON
+
+  } catch (e) {
     return res.status(500).json({
-      error: "internal",
-      message: err?.message ?? String(err)
+      live: false,
+      error: "Gagal fetch halaman TikTok"
     });
   }
 }
