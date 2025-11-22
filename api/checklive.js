@@ -1,25 +1,37 @@
 import axios from "axios";
 
-const USER = "abdillahzuhdi63";
-
 export default async function handler(req, res) {
-    try {
-        const url = `https://www.tiktok.com/@${USER}`;
-        const liveUrl = `https://www.tiktok.com/@${USER}/live`;
+  const USER = "abdillahzuhdi63";
+  const url = `https://www.tiktok.com/@${USER}`;
+  const liveUrl = `https://www.tiktok.com/@${USER}/live`;
 
-        const html = await axios.get(url, {
-            headers: { "User-Agent": "Mozilla/5.0" }
-        });
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      maxRedirects: 0,   // ❗ cegah redirect login
+      validateStatus: () => true
+    });
 
-        const isLive = html.data.includes('"isLive":true');
+    const html = response.data || "";
 
-        return res.status(200).json({
-            username: USER,
-            live: isLive,
-            live_url: isLive ? liveUrl : null
-        });
+    const isLive =
+      html.includes('"isLive":true') ||
+      html.includes('"liveRoomId"') ||
+      html.includes("LIVE_NOW");
 
-    } catch (e) {
-        return res.status(500).json({ error: e.message });
-    }
+    return res.status(200).json({
+      username: USER,
+      isLive,
+      live_url: isLive ? liveUrl : null,
+      status: response.status
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      error: err.message
+    });
+  }
 }
