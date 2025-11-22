@@ -1,6 +1,7 @@
 {
   "name": "tiktok-live-api",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "axios": "latest"
   }
